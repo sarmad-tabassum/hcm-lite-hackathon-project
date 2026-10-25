@@ -1,0 +1,25 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    - cron: "0 6 */3 * *"   # har 3 din baad (06:00 UTC)
+  workflow_dispatch:         # GitHub par "Run workflow" button se haath se bhi chala sakte hain
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -e
+          STATUS=$(curl -s -o response.txt -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY")
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "Ping failed:"; cat response.txt; exit 1
+          fi
+          echo "Supabase ping OK"
